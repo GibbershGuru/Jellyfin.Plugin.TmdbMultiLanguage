@@ -43,9 +43,9 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         {
             tmdbId = parentSeason.Series?.GetProviderId(MetadataProvider.Tmdb);
         }
-        else if (item is Episode episode)
+        else if (item is Episode parentEpisode)
         {
-            tmdbId = episode.Series?.GetProviderId(MetadataProvider.Tmdb);
+            tmdbId = parentEpisode.Series?.GetProviderId(MetadataProvider.Tmdb);
         }
 
         if (string.IsNullOrWhiteSpace(tmdbId)) return Array.Empty<RemoteImageInfo>();
