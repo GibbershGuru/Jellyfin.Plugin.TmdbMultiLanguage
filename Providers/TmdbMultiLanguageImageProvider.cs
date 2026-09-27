@@ -28,8 +28,11 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
 
     public string Name => "TMDB Multi-Language";
     public int Order => 0;
-    public bool Supports(BaseItem item) => item is Movie or Series or Season;
-    public IEnumerable<ImageType> GetSupportedImages(BaseItem item) => new[] { ImageType.Primary, ImageType.Backdrop, ImageType.Logo };
+    public bool Supports(BaseItem item) => item is Movie or Series or Season or Episode;
+    public IEnumerable<ImageType> GetSupportedImages(BaseItem item) =>
+        item is Episode or Season
+            ? new[] { ImageType.Primary }
+            : new[] { ImageType.Primary, ImageType.Backdrop, ImageType.Logo };
 
     public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
     {
@@ -40,6 +43,10 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         {
             tmdbId = parentSeason.Series?.GetProviderId(MetadataProvider.Tmdb);
         }
+        else if (item is Episode episode)
+        {
+            tmdbId = episode.Series?.GetProviderId(MetadataProvider.Tmdb);
+        }
 
         if (string.IsNullOrWhiteSpace(tmdbId)) return Array.Empty<RemoteImageInfo>();
 
@@ -48,7 +55,12 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         var logo = Parse(config.GetLanguagesFor(ImageType.Logo));
         var langs = BuildLanguageParam(primary, backdrop, logo);
         string url;
-        if (item is Season season)
+        if (item is Episode episode)
+        {
+            if (!episode.ParentIndexNumber.HasValue || !episode.IndexNumber.HasValue) return Array.Empty<RemoteImageInfo>();
+            url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{episode.ParentIndexNumber.Value}/episode/{episode.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+        }
+        else if (item is Season season)
         {
             if (!season.IndexNumber.HasValue) return Array.Empty<RemoteImageInfo>();
             url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{season.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
@@ -70,9 +82,16 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             var data = await JsonSerializer.DeserializeAsync<TmdbImageResponse>(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
             var result = new List<RemoteImageInfo>();
-            Add(result, data?.Posters, ImageType.Primary, primary, config.IgnoreUnratedImages);
-            Add(result, data?.Backdrops, ImageType.Backdrop, backdrop, config.IgnoreUnratedImages);
-            Add(result, data?.Logos, ImageType.Logo, logo, config.IgnoreUnratedImages);
+            if (item is Episode)
+            {
+                Add(result, data?.Stills, ImageType.Primary, primary, config.IgnoreUnratedImages);
+            }
+            else
+            {
+                Add(result, data?.Posters, ImageType.Primary, primary, config.IgnoreUnratedImages);
+                Add(result, data?.Backdrops, ImageType.Backdrop, backdrop, config.IgnoreUnratedImages);
+                Add(result, data?.Logos, ImageType.Logo, logo, config.IgnoreUnratedImages);
+            }
             return result;
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
