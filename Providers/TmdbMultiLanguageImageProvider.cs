@@ -28,7 +28,7 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
 
     public string Name => "TMDB Multi-Language";
     public int Order => 0;
-    public bool Supports(BaseItem item) => item is Movie or Series;
+    public bool Supports(BaseItem item) => item is Movie or Series or Season;
     public IEnumerable<ImageType> GetSupportedImages(BaseItem item) => new[] { ImageType.Primary, ImageType.Backdrop, ImageType.Logo };
 
     public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
@@ -36,14 +36,28 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         var config = Plugin.Instance?.Configuration;
         if (config is null || string.IsNullOrWhiteSpace(config.TmdbApiKey)) return Array.Empty<RemoteImageInfo>();
         var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
+        if (item is Season season && string.IsNullOrWhiteSpace(tmdbId))
+        {
+            tmdbId = season.Series?.GetProviderId(MetadataProvider.Tmdb);
+        }
+
         if (string.IsNullOrWhiteSpace(tmdbId)) return Array.Empty<RemoteImageInfo>();
 
         var primary = Parse(config.GetLanguagesFor(ImageType.Primary));
         var backdrop = Parse(config.GetLanguagesFor(ImageType.Backdrop));
         var logo = Parse(config.GetLanguagesFor(ImageType.Logo));
         var langs = BuildLanguageParam(primary, backdrop, logo);
-        var mediaType = item is Movie ? "movie" : "tv";
-        var url = $"{ApiBase}/{mediaType}/{Uri.EscapeDataString(tmdbId)}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+        string url;
+        if (item is Season season)
+        {
+            if (!season.IndexNumber.HasValue) return Array.Empty<RemoteImageInfo>();
+            url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{season.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+        }
+        else
+        {
+            var mediaType = item is Movie ? "movie" : "tv";
+            url = $"{ApiBase}/{mediaType}/{Uri.EscapeDataString(tmdbId)}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+        }
 
         try
         {
