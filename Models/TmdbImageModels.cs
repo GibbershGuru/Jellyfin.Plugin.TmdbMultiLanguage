@@ -8,6 +8,7 @@ public sealed class TmdbImageResponse
     [JsonPropertyName("posters")] public List<TmdbImage>? Posters { get; set; }
     [JsonPropertyName("backdrops")] public List<TmdbImage>? Backdrops { get; set; }
     [JsonPropertyName("logos")] public List<TmdbImage>? Logos { get; set; }
+    [JsonPropertyName("stills")] public List<TmdbImage>? Stills { get; set; }
 }
 
 public sealed class TmdbImage
