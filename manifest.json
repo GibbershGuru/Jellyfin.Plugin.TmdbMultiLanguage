@@ -1,0 +1,11 @@
+[
+  {
+    "name": "TMDB Multi-Language Images",
+    "guid": "96afa51e-678e-42ac-b9f6-f3679173a23f",
+    "overview": "Load TMDB images using configurable language priorities.",
+    "description": "Jellyfin 12 compatible TMDB image provider with separate language priorities for posters, backdrops and logos.",
+    "owner": "GibbershGuru",
+    "category": "Metadata",
+    "versions": []
+  }
+]
