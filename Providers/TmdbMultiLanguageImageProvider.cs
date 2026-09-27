@@ -58,7 +58,7 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         if (item is Episode episode)
         {
             if (!episode.ParentIndexNumber.HasValue || !episode.IndexNumber.HasValue) return Array.Empty<RemoteImageInfo>();
-            url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{episode.ParentIndexNumber.Value}/episode/{episode.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+            url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{episode.ParentIndexNumber.Value}/episode/{episode.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}";
         }
         else if (item is Season season)
         {
@@ -84,7 +84,7 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
             var result = new List<RemoteImageInfo>();
             if (item is Episode)
             {
-                Add(result, data?.Stills, ImageType.Primary, primary, config.IgnoreUnratedImages);
+                AddEpisodeStills(result, data?.Stills, config.IgnoreUnratedImages);
             }
             else
             {
@@ -103,6 +103,14 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
 
     public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken) =>
         _httpClientFactory.CreateClient().GetAsync(url, cancellationToken);
+
+    private void AddEpisodeStills(List<RemoteImageInfo> target, List<TmdbImage>? source, bool ignoreUnrated)
+    {
+        if (source is null) return;
+        target.AddRange(source.Where(x => !ignoreUnrated || x.VoteAverage > 0)
+            .OrderByDescending(x => x.VoteAverage)
+            .Select(x => new RemoteImageInfo { Url=ImageBase+x.FilePath, Type=ImageType.Primary, ProviderName=Name, Language=x.Iso6391, Width=x.Width, Height=x.Height, CommunityRating=x.VoteAverage }));
+    }
 
     private void Add(List<RemoteImageInfo> target, List<TmdbImage>? source, ImageType type, List<string?> priority, bool ignoreUnrated)
     {
