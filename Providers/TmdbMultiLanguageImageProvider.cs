@@ -36,9 +36,9 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         var config = Plugin.Instance?.Configuration;
         if (config is null || string.IsNullOrWhiteSpace(config.TmdbApiKey)) return Array.Empty<RemoteImageInfo>();
         var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
-        if (item is Season season && string.IsNullOrWhiteSpace(tmdbId))
+        if (item is Season parentSeason && string.IsNullOrWhiteSpace(tmdbId))
         {
-            tmdbId = season.Series?.GetProviderId(MetadataProvider.Tmdb);
+            tmdbId = parentSeason.Series?.GetProviderId(MetadataProvider.Tmdb);
         }
 
         if (string.IsNullOrWhiteSpace(tmdbId)) return Array.Empty<RemoteImageInfo>();
