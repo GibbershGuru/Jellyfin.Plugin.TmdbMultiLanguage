@@ -1,0 +1,250 @@
+<div id="TmdbMultiLanguageConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="tmdbMultiLanguageConfigForm">
+                
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer">
+                        <h2 class="sectionTitle">TMDB Multi-Language Image Settings</h2>
+                        <p class="sectionDescription">
+                            Configure your API Key and preferred language order for image fetching.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="txtTmdbApiKey">TMDB API Key</label>
+                    <input type="text" id="txtTmdbApiKey" name="txtTmdbApiKey" is="emby-input" required />
+                    <div class="fieldDescription">Your personal API key from TheMovieDB. Required for metadata and image fetching.</div>
+                </div>
+
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer">
+                        <h3 class="sectionTitle">Language Priority Per Image Type</h3>
+                        <p class="sectionDescription">
+                            Set the preferred language order separately for each image type. Comma separated, highest priority first.
+                            Example: <strong>de,en,null</strong>. Use <strong>null</strong> for images without a language tag.
+                            Images in languages not listed will be excluded.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="txtPrimaryLanguages">Primary (Poster) Languages</label>
+                    <input type="text" id="txtPrimaryLanguages" name="txtPrimaryLanguages" is="emby-input" />
+                    <div class="fieldDescription">Language priority for poster / primary images.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="txtBackdropLanguages">Backdrop Languages</label>
+                    <input type="text" id="txtBackdropLanguages" name="txtBackdropLanguages" is="emby-input" />
+                    <div class="fieldDescription">Language priority for backdrop images. Backdrops often have no language — typically include <strong>null</strong>.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="txtLogoLanguages">Logo Languages</label>
+                    <input type="text" id="txtLogoLanguages" name="txtLogoLanguages" is="emby-input" />
+                    <div class="fieldDescription">Language priority for logo images.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="checkboxContainerLabel">
+                        <input type="checkbox" id="chkIgnoreUnratedImages" name="chkIgnoreUnratedImages" is="emby-checkbox" />
+                        <span>Ignore Unrated Images</span>
+                    </label>
+                    <div class="fieldDescription">When enabled, images without any user rating on TMDB (vote_average = 0) are filtered out.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="checkboxContainerLabel">
+                        <input type="checkbox" id="chkEnableDebugMode" name="chkEnableDebugMode" is="emby-checkbox" />
+                        <span>Enable Debug Mode</span>
+                    </label>
+                    <div class="fieldDescription">When enabled, detailed debug information about TMDB API interactions will be logged to the Jellyfin console. Useful for troubleshooting.</div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block formDialogFooterItem">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function() {
+            'use strict';
+            
+            const pluginId = "96afa51e-678e-42ac-b9f6-f3679173a23f";
+            let configLoaded = false;
+            
+            // Function to load configuration
+            function loadConfig(page) {
+                // Prevent multiple simultaneous loads
+                if (configLoaded) {
+                    return;
+                }
+                
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    var apiKey = config.TmdbApiKey || config.tmdbApiKey || "";
+                    var legacyLanguages = config.PreferredLanguages || config.preferredLanguages || "de,en,null";
+                    var primaryLanguages = config.PrimaryLanguages || config.primaryLanguages || legacyLanguages;
+                    var backdropLanguages = config.BackdropLanguages || config.backdropLanguages || legacyLanguages;
+                    var logoLanguages = config.LogoLanguages || config.logoLanguages || legacyLanguages;
+                    var ignoreUnratedImages = config.IgnoreUnratedImages || config.ignoreUnratedImages || false;
+                    var enableDebugMode = config.EnableDebugMode || config.enableDebugMode || false;
+
+                    var apiKeyInput = page.querySelector('#txtTmdbApiKey');
+                    var primaryInput = page.querySelector('#txtPrimaryLanguages');
+                    var backdropInput = page.querySelector('#txtBackdropLanguages');
+                    var logoInput = page.querySelector('#txtLogoLanguages');
+                    var ignoreUnratedCheckbox = page.querySelector('#chkIgnoreUnratedImages');
+                    var debugModeCheckbox = page.querySelector('#chkEnableDebugMode');
+
+                    if (apiKeyInput) {
+                        apiKeyInput.value = apiKey;
+                    }
+
+                    if (primaryInput) {
+                        primaryInput.value = primaryLanguages;
+                    }
+
+                    if (backdropInput) {
+                        backdropInput.value = backdropLanguages;
+                    }
+
+                    if (logoInput) {
+                        logoInput.value = logoLanguages;
+                    }
+
+                    if (ignoreUnratedCheckbox) {
+                        ignoreUnratedCheckbox.checked = ignoreUnratedImages;
+                    }
+
+                    if (debugModeCheckbox) {
+                        debugModeCheckbox.checked = enableDebugMode;
+                    }
+
+                    configLoaded = true;
+                    Dashboard.hideLoadingMsg();
+                }).catch(function(error) {
+                    console.error("Error loading configuration:", error);
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+            
+            // Wait for DOM to be ready
+            function init() {
+                const view = document.querySelector('#TmdbMultiLanguageConfigPage');
+                
+                if (!view) {
+                    // Retry if view not found yet (for older Jellyfin versions)
+                    setTimeout(init, 100);
+                    return;
+                }
+                
+                // Multiple initialization strategies for compatibility with 10.10.7 and 10.11+
+                
+                // Strategy 1: viewshow event (for newer versions)
+                view.addEventListener('viewshow', function () {
+                    configLoaded = false;
+                    loadConfig(this);
+                });
+                
+                // Strategy 2: pageshow event (for older versions like 10.10.7)
+                view.addEventListener('pageshow', function () {
+                    configLoaded = false;
+                    loadConfig(this);
+                });
+                
+                // Strategy 3: Check if page is visible and load immediately
+                function checkAndLoad() {
+                    if (!configLoaded && view.offsetParent !== null) {
+                        loadConfig(view);
+                    }
+                }
+                
+                // Try loading immediately
+                setTimeout(checkAndLoad, 200);
+                
+                // Also try after a longer delay (for slower loading in 10.10.7)
+                setTimeout(checkAndLoad, 500);
+                setTimeout(checkAndLoad, 1000);
+                
+                // Strategy 4: MutationObserver to detect when page becomes visible
+                if (typeof MutationObserver !== 'undefined') {
+                    const observer = new MutationObserver(function(mutations) {
+                        if (!configLoaded && view.offsetParent !== null) {
+                            loadConfig(view);
+                        }
+                    });
+                    
+                    observer.observe(view, {
+                        attributes: true,
+                        attributeFilter: ['style', 'class'],
+                        childList: false,
+                        subtree: false
+                    });
+                }
+
+                // Handle form submission
+                const form = view.querySelector('#tmdbMultiLanguageConfigForm');
+                if (form) {
+                    form.addEventListener('submit', function (e) {
+                        Dashboard.showLoadingMsg();
+                        const formElement = this;
+                        const page = formElement.closest('.pluginConfigurationPage');
+                        
+                        // Read values from form inputs
+                        var tmdbApiKey = page.querySelector('#txtTmdbApiKey').value;
+                        var primaryLanguages = page.querySelector('#txtPrimaryLanguages').value;
+                        var backdropLanguages = page.querySelector('#txtBackdropLanguages').value;
+                        var logoLanguages = page.querySelector('#txtLogoLanguages').value;
+                        var ignoreUnratedImages = page.querySelector('#chkIgnoreUnratedImages').checked;
+                        var enableDebugMode = page.querySelector('#chkEnableDebugMode').checked;
+
+                        // Load current config, merge changes, and update
+                        ApiClient.getPluginConfiguration(pluginId).then(function (currentConfig) {
+                            var config = currentConfig || {};
+                            config.TmdbApiKey = tmdbApiKey;
+                            config.PrimaryLanguages = primaryLanguages;
+                            config.BackdropLanguages = backdropLanguages;
+                            config.LogoLanguages = logoLanguages;
+                            // Keep PreferredLanguages in sync with Primary as a sane legacy value.
+                            config.PreferredLanguages = primaryLanguages;
+                            config.IgnoreUnratedImages = ignoreUnratedImages;
+                            config.EnableDebugMode = enableDebugMode;
+                            
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                            }, function(error) {
+                                console.error("Error saving configuration:", error);
+                                Dashboard.alert({
+                                    message: "Error saving configuration: " + (error.Message || error)
+                                });
+                            });
+                        });
+                        
+                        e.preventDefault();
+                        return false;
+                    });
+                }
+            }
+            
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                // DOM already loaded
+                init();
+            }
+            
+            // Also try initialization after window load (for 10.10.7 compatibility)
+            window.addEventListener('load', function() {
+                setTimeout(init, 100);
+            });
+        })();
+    </script>
+</div>
