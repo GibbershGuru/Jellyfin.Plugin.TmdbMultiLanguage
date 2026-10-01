@@ -8,6 +8,13 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "2.0.0.5",
+        "changelog": "Jellyfin 12.1 / .NET 10 compatibility release.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://github.com/GibbershGuru/Jellyfin.Plugin.TmdbMultiLanguage/releases/download/v2.0.0.5/Jellyfin.Plugin.TmdbMultiLanguage_v2.0.0.5.zip",
+        "checksum": "8DDB082B75540E252B5D6BD8E6DC9003"
+      },
+      {
         "version": "2.0.0.4",
         "changelog": "Jellyfin 12.1 / .NET 10 compatibility release.",
         "targetAbi": "12.1.0.0",
