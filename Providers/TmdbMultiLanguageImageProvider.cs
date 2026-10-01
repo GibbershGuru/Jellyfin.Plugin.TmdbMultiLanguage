@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.TmdbMultiLanguage.Models;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.Collections;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
