@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.TmdbMultiLanguage.Models;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.Collections;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -28,11 +29,13 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
 
     public string Name => "TMDB Multi-Language";
     public int Order => 0;
-    public bool Supports(BaseItem item) => item is Movie or Series or Season or Episode;
+    public bool Supports(BaseItem item) => item is Movie or Series or Season or Episode or BoxSet;
     public IEnumerable<ImageType> GetSupportedImages(BaseItem item) =>
         item is Episode or Season
             ? new[] { ImageType.Primary }
-            : new[] { ImageType.Primary, ImageType.Backdrop, ImageType.Logo };
+            : item is BoxSet
+                ? new[] { ImageType.Primary, ImageType.Backdrop }
+                : new[] { ImageType.Primary, ImageType.Backdrop, ImageType.Logo };
 
     public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
     {
@@ -64,6 +67,10 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         {
             if (!season.IndexNumber.HasValue) return Array.Empty<RemoteImageInfo>();
             url = $"{ApiBase}/tv/{Uri.EscapeDataString(tmdbId)}/season/{season.IndexNumber.Value}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
+        }
+        else if (item is BoxSet)
+        {
+            url = $"{ApiBase}/collection/{Uri.EscapeDataString(tmdbId)}/images?api_key={Uri.EscapeDataString(config.TmdbApiKey)}&include_image_language={Uri.EscapeDataString(langs)}";
         }
         else
         {
