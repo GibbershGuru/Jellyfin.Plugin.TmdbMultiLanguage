@@ -109,6 +109,7 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         if (source is null) return;
         target.AddRange(source.Where(x => !ignoreUnrated || x.VoteAverage > 0)
             .OrderByDescending(x => x.VoteAverage)
+            .ThenByDescending(x => x.VoteCount)
             .Select(x => new RemoteImageInfo { Url=ImageBase+x.FilePath, Type=ImageType.Primary, ProviderName=Name, Language=x.Iso6391, Width=x.Width, Height=x.Height, CommunityRating=x.VoteAverage }));
     }
 
@@ -117,7 +118,9 @@ public sealed class TmdbMultiLanguageImageProvider : IRemoteImageProvider, IHasO
         if (source is null) return;
         target.AddRange(source.Where(x => !ignoreUnrated || x.VoteAverage > 0)
             .Select(x => new { Image=x, Priority=Priority(x.Iso6391, priority) }).Where(x => x.Priority >= 0)
-            .OrderBy(x => x.Priority).ThenByDescending(x => x.Image.VoteAverage)
+            .OrderBy(x => x.Priority)
+            .ThenByDescending(x => x.Image.VoteAverage)
+            .ThenByDescending(x => x.Image.VoteCount)
             .Select(x => new RemoteImageInfo { Url=ImageBase+x.Image.FilePath, Type=type, ProviderName=Name, Language=x.Image.Iso6391, Width=x.Image.Width, Height=x.Image.Height, CommunityRating=x.Image.VoteAverage }));
     }
 
